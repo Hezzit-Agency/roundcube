@@ -99,10 +99,22 @@ RUN echo "----> Downloading Roundcube version ${ROUNDCUBE_VERSION}..." \
     && tar -xzf roundcube.tar.gz --strip-components=1 -C /var/www/html \
     && rm roundcube.tar.gz
 
-# Step 2: Install 'classic' skin dependency using Composer
-RUN echo "----> Requiring classic skin..." \
-    && cd /var/www/html \
-    && composer require --no-update roundcube/classic:"~1.6" --profile
+# Step 2: Download and Install 'classic' skin directly from GitHub release v1.6.0
+RUN echo "----> Downloading classic skin release 1.6.0..." \
+    && cd /tmp \
+    # Download the source code tarball for tag 1.6.0
+    && wget "https://github.com/roundcube/classic/archive/refs/tags/1.6.0.tar.gz" -O classic-skin.tar.gz \
+    # Create the target directory
+    && mkdir -p /var/www/html/skins/classic \
+    # Extract into the target directory, removing the top-level folder from the archive
+    && echo "----> Extracting classic skin to /var/www/html/skins/classic..." \
+    && tar -xzf classic-skin.tar.gz --strip-components=1 -C /var/www/html/skins/classic \
+    # Clean up downloaded tarball
+    && rm classic-skin.tar.gz \
+    # Ensure correct ownership (might be redundant if later chown covers it, but safe)
+    && chown -R www-data:www-data /var/www/html/skins/classic \
+    # Go back to /var/www/html if subsequent steps expect it
+    && cd /var/www/html
 
 # Step 3: Install PHP Dependencies using Composer
 RUN echo "----> Installing composer dependencies (add --verbose here for more details if needed)..." \
