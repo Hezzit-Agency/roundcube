@@ -1,4 +1,4 @@
-name: Create GitHub Release
+name: Latest Release
 
 on:
   push:

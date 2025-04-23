@@ -18,7 +18,7 @@ else
   echo "Modo Full (Nginx + FPM) detectado."
   # A configuração do Nginx só é relevante no modo 'full'
   # --- Configuração de Limite de Upload ---
-  UPLOAD_SIZE_DEFAULT="50M"
+  UPLOAD_SIZE_DEFAULT="100M"
   UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_DEFAULT}
   echo "Ajustando client_max_body_size do Nginx para: ${UPLOAD_SIZE}"
   sed -i "s|client_max_body_size.*|client_max_body_size ${UPLOAD_SIZE};|" /etc/nginx/http.d/default.conf
@@ -27,7 +27,7 @@ fi
 
 # --- Configuração do PHP (sempre aplicável) ---
 # Limite de Upload PHP (aplicado mesmo em fpm-only)
-UPLOAD_SIZE_PHP_DEFAULT="50M"
+UPLOAD_SIZE_PHP_DEFAULT="100M"
 UPLOAD_SIZE_PHP=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_PHP_DEFAULT}
 echo "Ajustando upload_max_filesize e post_max_size do PHP para: ${UPLOAD_SIZE_PHP}"
 echo "; Configurações de upload definidas via entrypoint" > /usr/local/etc/php/conf.d/99-upload-settings.ini

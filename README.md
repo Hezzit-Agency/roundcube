@@ -1,8 +1,23 @@
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Hezzit-Agency/roundcube/main/logo.png"
+        height="100">
+</p>
+<p align="center">
+  <a href="https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish-dev.yml">
+    <img src="https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish-dev.yml/badge.svg" alt="Dev Build" />
+  </a>
+  <a href="https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish.yml">
+    <img src="https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish.yml/badge.svg" alt="Release Build" />
+  </a>
+  <a href="https://github.com/Hezzit-Agency/roundcube/releases">
+    <img src="https://img.shields.io/github/v/release/Hezzit-Agency/roundcube?label=Latest%20Release" alt="Latest Release" />
+  </a>
+  <a href="https://github.com/Hezzit-Agency/roundcube/pkgs/container/roundcube">
+    <img src="https://img.shields.io/docker/image-size/ghcr.io/hezzit-agency/roundcube/latest?label=Image%20Size" alt="Docker Image Size" />
+  </a>
+</p>
+
 # 📬 Hezzit Roundcube Webmail – Docker Edition
-
-[![Dev Build Status](https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish-dev.yml/badge.svg)](https://github.com/Hezzit-Agency/roundcube/actions/workflows/docker-publish-dev.yml)
-
-
 Welcome to the **Dockerized Roundcube** setup from **Hezzit** — fast to deploy, easy to customize, and ready for production. Built for flexibility, it supports two operation modes:
 
 - 🔧 **fpm-only**: Use it behind your own Nginx reverse proxy.
@@ -24,7 +39,7 @@ docker run \
   -e RUN_MODE=fpm-only \
   -e MAX_UPLOAD_SIZE=100M \
   -e PHP_MEMORY_LIMIT=256M \
-  -v "$PWD/roundcube_data/config/config.inc.php:/var/www/html/config/config.inc.php:ro" \
+  -v "$PWD/roundcube_data/config.inc.php:/var/www/html/config/config.inc.php:ro" \
   -v "$PWD/roundcube_data/plugins:/custom_plugins:ro" \
   -v "$PWD/roundcube_data/skins:/custom_skins:ro" \
   -v "$PWD/roundcube_data/logs:/var/www/html/logs" \
@@ -56,7 +71,7 @@ services:
       # should be configured directly in the mounted config.inc.php file below.
     volumes:
       # --- Main Roundcube Configuration File ---
-      - ./roundcube_data/config/config.inc.php:/var/www/html/config/config.inc.php:ro
+      - ./roundcube_data/config.inc.php:/var/www/html/config/config.inc.php:ro
       # --- Custom Plugins and Skins ---
       - ./roundcube_data/plugins:/custom_plugins:ro
       - ./roundcube_data/skins:/custom_skins:ro
@@ -104,7 +119,7 @@ services:
 
 | Host Path                                | Container Path                                     | Purpose                        |
 |------------------------------------------|----------------------------------------------------|--------------------------------|
-| `roundcube_data/config/config.inc.php`   | `/var/www/html/config/config.inc.php`              | Main Roundcube config          |
+| `roundcube_data/config.inc.php`   | `/var/www/html/config/config.inc.php`              | Main Roundcube config          |
 | `roundcube_data/plugins/`                | `/custom_plugins/`                                 | Custom plugins directory       |
 | `roundcube_data/skins/`                  | `/custom_skins/`                                   | Custom skins directory         |
 | `roundcube_data/logs/`                   | `/var/www/html/logs/`                              | Logs (optional)                |

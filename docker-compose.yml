@@ -18,7 +18,7 @@ services:
       # should be configured directly in the mounted config.inc.php file below.
     volumes:
       # --- Main Roundcube Configuration File ---
-      - ./roundcube_data/config/config.inc.php:/var/www/html/config/config.inc.php:ro
+      - ./roundcube_data/config.inc.php:/var/www/html/config/config.inc.php:ro
       # --- Custom Plugins and Skins ---
       - ./roundcube_data/plugins:/custom_plugins:ro
       - ./roundcube_data/skins:/custom_skins:ro
