@@ -142,7 +142,7 @@ RUN echo "----> Creating directories and setting permissions..." \
 # Define Volumes for persistent data and main external configuration
 # Note that /plugins and /skins are NOT defined here, as they will be managed
 # by the entrypoint script using mounts at /custom_plugins and /custom_skins
-VOLUME /var/www/html/config /var/www/html/logs /var/www/html/temp
+VOLUME /var/www/html/SQL /var/www/html/logs /var/www/html/temp
 
 # Expose the Nginx port (80) and the PHP-FPM port (9000)
 EXPOSE 80 9000

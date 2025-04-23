@@ -101,6 +101,17 @@ services:
 ```php
 <?php
 
+/*
+ +--------------------------------------------------------------------------------+
+ | Local configuration for the Roundcube Webmail installation.                    |
+ |                                                                                |
+ | This is a sample configuration file only containing the minimum                |
+ | setup required for a functional installation. Copy more options                |
+ | from defaults.inc.php to this file to override the defaults.                   |
+ | https://github.com/roundcube/roundcubemail/blob/master/config/defaults.inc.php |
+ +--------------------------------------------------------------------------------+
+*/
+
 $config = [];
 
 // ----------------------------------
@@ -121,7 +132,6 @@ $config['db_dsnw'] = 'sqlite:////var/www/html/SQL/sqlite.db?mode=0646';
 // - 'password': The password for that user.
 // - 'db_mariadb': The **service name** of your MariaDB/MySQL container in docker-compose.yml.
 // - 'roundcubemail': The name of the database created for Roundcube.
-// Ensure the 'pdo_mysql' PHP extension is installed in the Dockerfile (it currently is).
 // $config['db_dsnw'] = 'mysql://user:password@db_mariadb/roundcubemail';
 
 // OPTION 3: PostgreSQL (running in another Docker container)
@@ -130,28 +140,28 @@ $config['db_dsnw'] = 'sqlite:////var/www/html/SQL/sqlite.db?mode=0646';
 // - 'password': The password for that user.
 // - 'db_postgres': The **service name** of your PostgreSQL container in docker-compose.yml.
 // - 'roundcubemail': The name of the database created for Roundcube.
-// Ensure the 'pdo_pgsql' PHP extension is installed in the Dockerfile (it currently is).
 // $config['db_dsnw'] = 'pgsql://user:password@db_postgres/roundcubemail';
 
 // --- IMAP Configuration ---
-// Connect to the 'mailserver' service within the Docker network.
 // Use 'ssl://' prefix for Implicit TLS (port 993 usually).
 // Use 'tls://' prefix for STARTTLS (port 143 usually).
 // Using Implicit TLS on port 993 (standard and recommended).
-$config['imap_host'] = 'ssl://mailserver:993';
 //$config['imap_host'] = 'ssl://imap.yourdomain.com:993'; //(Another example)
 //$config['smtp_host'] = 'tls://mail.yourdomain.com:143'; //(Another example)
+// Connect to the 'mailserver' service within the Docker network.
+$config['imap_host'] = 'ssl://mailserver:993';
 // Optional: If mailserver requires full email address for login
 // $config['username_domain'] = 'yourdomain.com'; // Replace with your domain
 
 // --- SMTP Configuration ---
-// Connect to the 'mailserver' service within the Docker network.
 // Use 'ssl://' prefix for Implicit TLS (port 465 usually).
 // Use 'tls://' prefix for STARTTLS (port 587 usually).
 // Using STARTTLS on port 587 (standard submission port).
-$config['smtp_host'] = 'tls://mailserver:587';
 //$config['smtp_host'] = 'tls://smtp.yourdomain.com:587'; //(Another example)
 //$config['smtp_host'] = 'ssl://mail.yourdomain.com:465'; //(Another example)
+// Connect to the 'mailserver' service within the Docker network.
+$config['smtp_host'] = 'tls://mailserver:587';
+
 
 // SMTP username (if required) if you use %u as the username Roundcube
 // will use the current username for login
@@ -197,8 +207,8 @@ $config['htmleditor'] = 1;
 // Message size limit. Note that SMTP server(s) may use a different value.
 // This limit is verified when user attaches files to a composed message.
 // Size in bytes (possible unit suffix: K, M, G)
-// RECOMMENDED TO SET THE SAME SETTING AS >>MAX_UPLOAD_SIZE<<
-$config['max_message_size'] = '100M';
+// RECOMMENDED TO SET VALUE LESS THAN OR EQUAL TO ENV: MAX_UPLOAD_SIZE
+$config['max_message_size'] = '80M';
 
 // Display remote resources (inline images, styles) in HTML messages. Default: 0.
 // 0 - Never, always ask

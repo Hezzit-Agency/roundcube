@@ -9,6 +9,29 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# --- BEGIN: Function Definition ---
+# Function to call the PHP helper script to extract the key
+# Argument 1: Path to the config file
+extract_key_php() {
+  local config_file="$1"
+  # Define the full path to the PHP script
+  local php_script="/usr/local/bin/check-key.php"
+
+  # Check if the PHP script exists and is executable
+  if [ ! -x "$php_script" ]; then
+    echo >&2 "ERROR: Key extraction script $php_script not found or not executable."
+    # Return empty to indicate extraction failure
+    echo ""
+    return
+  fi
+
+  # Call the PHP script, pass the config file path
+  # Capture only stdout (the key) and suppress stderr unless debugging
+  # Use 'php' explicitly to execute the script
+  /usr/local/bin/php "$php_script" "$config_file" 2>/dev/null || echo ""
+}
+# --- END: Function Definition ---
+
 # --- BEGIN: DES Key Security Check ---
 echo "Performing DES Key security check..."
 
