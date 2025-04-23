@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     ports:
       # Adjust the exposed port based on the selected RUN_MODE:
-      # - "8080:80"   # Use this for RUN_MODE=full (internal Nginx)
+      #- "8080:80"   # Use this for RUN_MODE=full (internal Nginx)
       - "9000:9000"   # Use this for RUN_MODE=fpm-only (external Nginx). Adjust to match your external Nginx config.
     environment:
       # --- Mode Selection ---
@@ -13,9 +13,14 @@ services:
       MAX_UPLOAD_SIZE: "100M"      # Max upload size, e.g., 100M or 1G
       PHP_MEMORY_LIMIT: "256M"     # PHP memory limit, e.g., 256M or 512M
       # --- Timezone (Optional) ---
-      # TZ: "Europe/London"        # Examples: "America/Sao_Paulo", "Europe/Paris", "America/New_York"
+      #TZ: "Europe/London"        # Examples: "America/Sao_Paulo", "Europe/Paris", "America/New_York"
+      # --- Roundcube DES_KEY Checker (Optional) ---
+      # Use to activate or deactivate the DES_KEY checker, preventing or not initialization (DEFAULT "false")
+      #ROUNDCUBE_SKIP_DES_KEY_CHECK: "true" #OR "false"
+      ################################
       # NOTE: Roundcube-specific settings (DB, SMTP, IMAP, DES_KEY, etc.)
       # should be configured directly in the mounted config.inc.php file below.
+      ################################
     volumes:
       # --- Main Roundcube Configuration File ---
       - ./roundcube_data/config.inc.php:/var/www/html/config/config.inc.php:ro

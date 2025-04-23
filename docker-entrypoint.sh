@@ -1,16 +1,129 @@
 #!/bin/sh
-# ./docker-entrypoint.sh - Updated to use rsync
+# docker-entrypoint.sh
+# Entrypoint script for Roundcube container
+# Handles: Run mode selection, ENV var configurations (Upload Size, Memory Limit),
+#          DES Key security check (vs defaults.inc.php AND config.inc.php.sample) using PHP helper,
+#          Custom plugin/skin sync (using rsync),
+#          and starting Supervisor.
 
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# --- Execution Mode Selection ---
-# Default mode is 'full' (Nginx + FPM)
-RUN_MODE_DEFAULT="full"
-# Use the $RUN_MODE variable from environment, or the default
-RUN_MODE=${RUN_MODE:-$RUN_MODE_DEFAULT}
+# --- BEGIN: DES Key Security Check ---
+echo "Performing DES Key security check..."
 
-# Default supervisor config file
+DEFAULT_CONFIG_FILE="/var/www/html/config/defaults.inc.php"
+SAMPLE_CONFIG_FILE="/var/www/html/config/config.inc.php.sample"
+USER_CONFIG_FILE="/var/www/html/config/config.inc.php"
+FALLBACK_DEFAULT_KEY='rcmail-!24ByteDESkey*Str' # Fallback if PHP parsing fails unexpectedly
+
+# 1. Check if user config file exists
+if [ ! -f "$USER_CONFIG_FILE" ]; then
+  echo >&2 "############################################################"
+  echo >&2 "ERROR: Configuration file not found!"
+  echo >&2 "Please mount your customized config.inc.php to $USER_CONFIG_FILE."
+  echo >&2 "You can copy and modify the sample file found in roundcube_data/config.inc.php.sample from the Github Repository."
+  echo >&2 "https://raw.githubusercontent.com/Hezzit-Agency/roundcube/main/roundcube_data/config.inc.php.sample"
+  echo >&2 "Container startup aborted."
+  echo >&2 "############################################################"
+  exit 1
+fi
+
+# 2. Extract keys using PHP helper script
+# Note: Suppress PHP warnings/errors from output using 2>/dev/null if desired, but stderr logs are useful
+echo "Extracting keys using PHP helper..."
+DEFAULT_DES_KEY=$(extract_key_php "$DEFAULT_CONFIG_FILE")
+SAMPLE_DES_KEY=$(extract_key_php "$SAMPLE_CONFIG_FILE")
+USER_DES_KEY=$(extract_key_php "$USER_CONFIG_FILE")
+
+# Handle cases where default keys couldn't be parsed
+if [ -z "$DEFAULT_DES_KEY" ]; then
+  echo >&2 "WARNING: Could not extract/parse des_key from $DEFAULT_CONFIG_FILE. Using known default for check."
+  DEFAULT_DES_KEY=$FALLBACK_DEFAULT_KEY
+fi
+if [ -z "$SAMPLE_DES_KEY" ]; then
+  echo >&2 "WARNING: Could not extract/parse des_key from $SAMPLE_CONFIG_FILE. Using known default for check."
+  SAMPLE_DES_KEY=$FALLBACK_DEFAULT_KEY
+fi
+
+# 3. Check if user key was found/extracted
+if [ -z "$USER_DES_KEY" ]; then
+   echo >&2 "############################################################"
+   echo >&2 "ERROR: \$config['des_key'] not found, empty, or could not be parsed in config.inc.php."
+   echo >&2 "This key is mandatory for security."
+   # Suggest key logic
+   if command -v openssl >/dev/null 2>&1; then
+     # CORRECTED: Generate 24 bytes -> 32 Base64 characters
+     suggested_key=$(openssl rand -base64 24)
+     echo >&2 "Suggested key value to add to your config (32 characters): '$suggested_key'"
+   else
+     echo >&2 "Cannot generate suggested key: 'openssl' command not found."
+     echo >&2 "Generate one manually (32 chars), e.g., using: openssl rand -base64 24"
+   fi
+   echo >&2 ""
+   echo >&2 "Container startup aborted."
+   echo >&2 "############################################################"
+   exit 1
+fi
+
+SKIP_CHECK="${ROUNDCUBE_SKIP_DES_KEY_CHECK:-false}"
+
+
+if [[ "$SKIP_CHECK" == "true" || "$SKIP_CHECK" == "1" ]]; then
+	echo "WARNING: DES_KEY Checker disabled by environment variable."
+else
+	# 4. Check key length
+	key_len=${#USER_DES_KEY}
+	required_len=32 # CORRECTED: Expect 32 characters for a key generated from 24 random bytes
+
+	# 5. Compare user key with BOTH defaults/samples and check length
+	key_is_default=0
+	if [ "$USER_DES_KEY" = "$DEFAULT_DES_KEY" ] || [ "$USER_DES_KEY" = "$SAMPLE_DES_KEY" ]; then
+		key_is_default=1
+	fi
+
+	key_length_incorrect=0
+	if [[ $key_len -lt 24 || $key_len -gt 32 ]]; then
+		key_length_incorrect=1
+	fi
+
+	# Abort if key matches either default OR if length is incorrect
+	if [ "$key_is_default" -eq 1 ] || [ "$key_length_incorrect" -eq 1 ]; then
+	  echo >&2 "############################################################"
+	  echo >&2 "ERROR: SECURITY RISK DETECTED - INVALID 'des_key'!"
+	  echo >&2 "Your Roundcube 'des_key' in config.inc.php is invalid because:"
+	  if [ "$key_is_default" -eq 1 ]; then
+		echo >&2 "  - It matches one of the default insecure values."
+	  fi
+	  if [ "$key_length_incorrect" -eq 1 ]; then
+		echo >&2 "  - Its length ($key_len characters) is incorrect (expected 24 or 32 characters)."
+	  fi
+	  echo >&2 "Using a default or invalid length key can be a security risk."
+	  echo >&2 ""
+	  echo >&2 "Please generate a strong random key (e.g., 24 or 32 characters long using base64)"
+	  echo >&2 "and update \$config['des_key'] in your config.inc.php."
+	  # Suggest key logic
+	   if command -v openssl >/dev/null 2>&1; then
+		 suggested_key=$(openssl rand -base64 24)
+		 echo >&2 "Suggested key value: '$suggested_key'"
+	   else
+		 echo >&2 "Cannot generate suggested key: 'openssl' command not found."
+		 echo >&2 "Generate one manually (32 chars), e.g., using: openssl rand -base64 24"
+	   fi
+	   echo >&2 ""
+	   echo >&2 "Container startup aborted for security reasons."
+	   echo >&2 "############################################################"
+	  exit 1
+	fi
+	echo "DES key check passed (different from defaults/samples and correct length)."
+fi
+# --- END: DES Key Security Check ---
+
+
+# --- Execution Mode Selection ---
+# (Rest of the script: RUN_MODE check, PHP/Nginx config, rsync, exec supervisord)
+RUN_MODE_DEFAULT="full"
+RUN_MODE=${RUN_MODE:-$RUN_MODE_DEFAULT}
 SUPERVISOR_CONF_FILE="/etc/supervisor/supervisord-full.conf"
 
 if [ "$RUN_MODE" = "fpm-only" ]; then
@@ -18,62 +131,45 @@ if [ "$RUN_MODE" = "fpm-only" ]; then
   SUPERVISOR_CONF_FILE="/etc/supervisor/supervisord-fpm-only.conf"
 else
   echo "Full mode (Nginx + FPM) detected."
-  # Nginx configuration is only relevant in 'full' mode
   # --- Upload Limit Configuration ---
-  UPLOAD_SIZE_DEFAULT="100M" # Default from user's provided file
+  UPLOAD_SIZE_DEFAULT="100M"
   UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_DEFAULT}
   echo "Adjusting Nginx client_max_body_size to: ${UPLOAD_SIZE}"
-  # Use '|' as sed delimiter to avoid issues with paths
   sed -i "s|client_max_body_size.*|client_max_body_size ${UPLOAD_SIZE};|" /etc/nginx/http.d/default.conf
-  # --- End Upload Limit Configuration ---
 fi
 
-# --- PHP Configuration (always applicable) ---
-# PHP Upload Limit (applied even in fpm-only mode)
-UPLOAD_SIZE_PHP_DEFAULT="100M" # Default from user's provided file
+# --- PHP Configuration ---
+UPLOAD_SIZE_PHP_DEFAULT="100M"
 UPLOAD_SIZE_PHP=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_PHP_DEFAULT}
 echo "Adjusting PHP upload_max_filesize and post_max_size to: ${UPLOAD_SIZE_PHP}"
-# Create specific ini file for upload settings
 echo "; Upload settings defined via entrypoint" > /usr/local/etc/php/conf.d/99-upload-settings.ini
 echo "upload_max_filesize = ${UPLOAD_SIZE_PHP}" >> /usr/local/etc/php/conf.d/99-upload-settings.ini
 echo "post_max_size = ${UPLOAD_SIZE_PHP}" >> /usr/local/etc/php/conf.d/99-upload-settings.ini
 
-# PHP Memory Limit
-PHP_MEMORY_LIMIT_DEFAULT="128M"
+PHP_MEMORY_LIMIT_DEFAULT="256M"
 PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-$PHP_MEMORY_LIMIT_DEFAULT}
 echo "Adjusting PHP memory_limit to: ${PHP_MEMORY_LIMIT}"
-# Create specific ini file for memory limit
 echo "; Memory limit defined via entrypoint" > /usr/local/etc/php/conf.d/98-memory-limit.ini
 echo "memory_limit = ${PHP_MEMORY_LIMIT}" >> /usr/local/etc/php/conf.d/98-memory-limit.ini
 
-# Ensure correct permissions on created .ini files
 chown www-data:www-data /usr/local/etc/php/conf.d/99-upload-settings.ini /usr/local/etc/php/conf.d/98-memory-limit.ini
 chmod 644 /usr/local/etc/php/conf.d/99-upload-settings.ini /usr/local/etc/php/conf.d/98-memory-limit.ini
 echo "PHP configurations applied."
-# --- End PHP Configuration ---
-
 
 # --- Function to Sync Custom Plugins/Skins using rsync ---
 sync_custom_files() {
   local src_dir="$1"
   local dest_dir="$2"
-  # Check if the source directory exists and is not empty
   if [ -d "$src_dir" ] && [ -n "$(ls -A "$src_dir")" ]; then
     echo "Syncing contents from $src_dir to $dest_dir using rsync..."
-    # Ensure the destination directory exists
     mkdir -p "$dest_dir"
-    # Use rsync -a: archive mode (recursive, preserves permissions, links, etc.)
-    # Trailing slash on src_dir ($src_dir/) is crucial: it copies the *contents*
-    # of the source directory into the destination directory, merging/overwriting files.
     rsync -a "$src_dir/" "$dest_dir/"
     echo "Sync completed for $src_dir."
-    #Ensure ownership after rsync if needed (though -a usually preserves it)
     chown -R www-data:www-data "$dest_dir"
   else
     echo "Source directory $src_dir not found or empty. Sync skipped."
   fi
 }
-# --- End Sync Function ---
 
 # Sync custom plugins and skins
 sync_custom_files "/custom_plugins" "/var/www/html/plugins"
@@ -81,5 +177,4 @@ sync_custom_files "/custom_skins" "/var/www/html/skins"
 
 # Execute supervisord with the correct configuration file
 echo "Executing main command: supervisord with config $SUPERVISOR_CONF_FILE"
-# The original CMD is ignored; we call supervisord directly here with the chosen config
 exec /usr/bin/supervisord -c "$SUPERVISOR_CONF_FILE"

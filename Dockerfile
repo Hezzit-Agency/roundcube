@@ -42,6 +42,14 @@ RUN apk add --no-cache --virtual .build-deps \
         mariadb-connector-c \
         oniguruma \
         rsync \
+        openssl \
+        sed \ # Ensure sed is available (usually is in alpine)
+        # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
+        # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
+        && sed -i '/^\s*#*\s*daemon\(ize\)\?\s*.*;/d' /etc/nginx/nginx.conf \
+        # Add 'daemon off;' correctly at the beginning of the file (global context)
+        && sed -i '1i daemon off;' /etc/nginx/nginx.conf \
+        # ============================================
         # Install composer globally
         && wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer \
         # Configure PHP extensions requiring options (e.g., GD)
@@ -67,11 +75,15 @@ RUN apk add --no-cache --virtual .build-deps \
         && mkdir -p /var/log/supervisor
 
 # Copy BOTH Supervisor configuration files
-COPY supervisord.conf /etc/supervisor/supervisord-full.conf
+COPY supervisord-full.conf /etc/supervisor/supervisord-full.conf
 COPY supervisord-fpm-only.conf /etc/supervisor/supervisord-fpm-only.conf
 
 # Copy Nginx configuration (only used in 'full' mode)
 COPY nginx-default.conf /etc/nginx/http.d/default.conf
+
+# Copy the helper PHP script for DES key extraction
+COPY check-key.php /usr/local/bin/check-key.php
+RUN chmod +x /usr/local/bin/check-key.php
 
 # Copy and set execute permission for the entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
@@ -87,18 +99,19 @@ RUN cd /tmp \
     && rm roundcube.tar.gz \
     # Navigate to the Roundcube directory
     && cd /var/www/html \
+    && composer require --no-update roundcube/classic:"~1.6" \
     # Install PHP dependencies via Composer (without development dependencies)
     && composer install --no-dev --optimize-autoloader --no-progress \
-    # Create necessary directories for Roundcube
-    && mkdir -p temp logs \
+    # Create necessary directories for Roundcube AND the SQLite DB
+    && mkdir -p temp logs SQL \
     # Set owner and permissions for the web application
     # Important to do BEFORE the entrypoint runs, as it handles plugins/skins
     && chown -R www-data:www-data /var/www/html \
     && find /var/www/html -type d -exec chmod 755 {} \; \
     && find /var/www/html -type f -exec chmod 644 {} \; \
     # Adjust permissions for directories needing write access by www-data
-    && chown -R www-data:www-data temp logs config plugins skins \
-    && chmod -R ug+rwX temp logs config plugins skins \
+    && chown -R www-data:www-data temp logs config plugins skins SQL \
+    && chmod -R ug+rwX temp logs config plugins skins SQL \
     # Clean up temporary files and caches
     && rm -rf /tmp/* \
               /var/www/html/installer \
