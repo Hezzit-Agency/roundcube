@@ -278,6 +278,21 @@ docker run -it hezzit-roundcube:dev
 ```
 
 ---
+
+## 🙏 Acknowledgements
+
+Special thanks to the creators and maintainers of the original [Roundcube Webmail](https://roundcube.net/), a powerful open-source IMAP client that this project is based on.
+
+Also, appreciation to the open-source communities behind:
+- [Nginx](https://nginx.org/) – Fast and flexible web server
+- [PHP-FPM](https://www.php.net/manual/en/install.fpm.php) – PHP FastCGI Process Manager
+- [Supervisor](http://supervisord.org/) – Process control system
+- [Alpine Linux](https://alpinelinux.org/) – Lightweight base image
+- [Docker](https://www.docker.com/) – The container platform powering this distribution
+
+Without these tools, this container wouldn’t be possible.
+
+---
 Built with ❤️ by [Hezzit](http://hezz.it). Contributions are welcome!
 
 >📄 License MIT

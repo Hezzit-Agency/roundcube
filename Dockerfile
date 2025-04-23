@@ -43,7 +43,7 @@ RUN apk add --no-cache --virtual .build-deps \
         oniguruma \
         rsync \
         openssl \
-        sed \ # Ensure sed is available (usually is in alpine)
+        sed \
         # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
         # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
         && sed -i '/^\s*#*\s*daemon\(ize\)\?\s*.*;/d' /etc/nginx/nginx.conf \
