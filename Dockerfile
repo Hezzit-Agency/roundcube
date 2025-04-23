@@ -25,8 +25,8 @@ RUN apk add --no-cache --virtual .build-deps \
         postgresql-dev \
         mariadb-connector-c-dev \
         oniguruma-dev \
-        # Install runtime dependencies and necessary tools
-        && apk add --no-cache \
+    # Install runtime dependencies and necessary tools
+    && apk add --no-cache \
         nginx \
         supervisor \
         wget \
@@ -44,35 +44,35 @@ RUN apk add --no-cache --virtual .build-deps \
         rsync \
         openssl \
         sed \
-        # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
-        # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
-        && sed -i '/^\s*#*\s*daemon\(ize\)\?\s*.*;/d' /etc/nginx/nginx.conf \
-        # Add 'daemon off;' correctly at the beginning of the file (global context)
-        && sed -i '1i daemon off;' /etc/nginx/nginx.conf \
-        # ============================================
-        # Install composer globally
-        && wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer \
-        # Configure PHP extensions requiring options (e.g., GD)
-        && docker-php-ext-configure gd --with-freetype --with-jpeg \
-        # Install PHP extensions required for Roundcube and common ones
-        && docker-php-ext-install -j$(nproc) \
-            zip \
-            fileinfo \
-            exif \
-            ldap \
-            pdo \
-            pdo_sqlite \
-            pdo_mysql \
-            pdo_pgsql \
-            gd \
-            intl \
-            mbstring \
-            ctype \
-            opcache \
-        # Remove build dependencies to keep the image smaller
-        && apk del .build-deps \
-        # Create directory for supervisor logs (optional, but good practice)
-        && mkdir -p /var/log/supervisor
+    # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
+    # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
+    && sed -i '/^\s*#*\s*daemon\(ize\)\?\s*.*;/d' /etc/nginx/nginx.conf \
+    # Add 'daemon off;' correctly at the beginning of the file (global context)
+    && sed -i '1i daemon off;' /etc/nginx/nginx.conf \
+    # ============================================
+    # Install composer globally
+    && wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer \
+    # Configure PHP extensions requiring options (e.g., GD)
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    # Install PHP extensions required for Roundcube and common ones
+    && docker-php-ext-install -j$(nproc) \
+        zip \
+        fileinfo \
+        exif \
+        ldap \
+        pdo \
+        pdo_sqlite \
+        pdo_mysql \
+        pdo_pgsql \
+        gd \
+        intl \
+        mbstring \
+        ctype \
+        opcache \
+    # Remove build dependencies to keep the image smaller
+    && apk del .build-deps \
+    # Create directory for supervisor logs (optional, but good practice)
+    && mkdir -p /var/log/supervisor
 
 # Copy BOTH Supervisor configuration files
 COPY supervisord-full.conf /etc/supervisor/supervisord-full.conf
@@ -89,30 +89,40 @@ RUN chmod +x /usr/local/bin/check-key.php
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-# Install Roundcube
-RUN cd /tmp \
-    # Download the complete version of Roundcube
+# --- Install Roundcube ---
+
+# Step 1: Download and Extract Roundcube
+RUN echo "----> Downloading Roundcube version ${ROUNDCUBE_VERSION}..." \
+    && cd /tmp \
     && wget "https://github.com/roundcube/roundcubemail/releases/download/${ROUNDCUBE_VERSION}/roundcubemail-${ROUNDCUBE_VERSION}-complete.tar.gz" -O roundcube.tar.gz \
-    # Extract the content to the working directory (/var/www/html)
+    && echo "----> Extracting Roundcube to /var/www/html..." \
     && tar -xzf roundcube.tar.gz --strip-components=1 -C /var/www/html \
-    # Remove the downloaded file
-    && rm roundcube.tar.gz \
-    # Navigate to the Roundcube directory
+    && rm roundcube.tar.gz
+
+# Step 2: Install 'classic' skin dependency using Composer
+RUN echo "----> Requiring classic skin..." \
     && cd /var/www/html \
-    && composer require --no-update roundcube/classic:"~1.6" \
-    # Install PHP dependencies via Composer (without development dependencies)
-    && composer install --no-dev --optimize-autoloader --no-progress \
-    # Create necessary directories for Roundcube AND the SQLite DB
+    && composer require --no-update roundcube/classic:"~1.6" --profile
+
+# Step 3: Install PHP Dependencies using Composer
+RUN echo "----> Installing composer dependencies (add --verbose here for more details if needed)..." \
+    && cd /var/www/html \
+    && composer install --no-dev --optimize-autoloader --no-progress --profile
+
+# Step 4: Create Dirs, Set Permissions, and Clean Up
+RUN echo "----> Creating directories and setting permissions..." \
+    && cd /var/www/html \
     && mkdir -p temp logs SQL \
-    # Set owner and permissions for the web application
-    # Important to do BEFORE the entrypoint runs, as it handles plugins/skins
+    # Set base ownership/permissions
     && chown -R www-data:www-data /var/www/html \
     && find /var/www/html -type d -exec chmod 755 {} \; \
     && find /var/www/html -type f -exec chmod 644 {} \; \
-    # Adjust permissions for directories needing write access by www-data
+    # Adjust permissions for directories needing write access by www-data (safer: only user)
+    && echo "----> Adjusting write permissions for specific directories..." \
     && chown -R www-data:www-data temp logs config plugins skins SQL \
-    && chmod -R ug+rwX temp logs config plugins skins SQL \
-    # Clean up temporary files and caches
+    && chmod -R u+rwX temp logs config plugins skins SQL \
+    # Clean up
+    && echo "----> Cleaning up temporary files and caches..." \
     && rm -rf /tmp/* \
               /var/www/html/installer \
               /root/.composer
