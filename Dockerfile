@@ -41,6 +41,7 @@ RUN apk add --no-cache --virtual .build-deps \
         postgresql-libs \
         mariadb-connector-c \
         oniguruma \
+        rsync \ # Added rsync for better file syncing in entrypoint
         # Install composer globally
         && wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer \
         # Configure PHP extensions requiring options (e.g., GD)
