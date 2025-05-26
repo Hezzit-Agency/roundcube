@@ -24,8 +24,7 @@ RUN apk add --no-cache \
     # php-json and php-phar for composer will be ensured by install-php-extensions
 
 # Install docker-php-extension-installer
-# Using COPY --from is a clean way to get the script from its official image
-COPY --from=mlocati/docker-php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 # Install PHP extensions required for Roundcube and common ones using install-php-extensions
 # This script handles fetching -dev packages, configuring, compiling, and cleaning up.
