@@ -122,7 +122,7 @@ RUN apk add --no-cache \
     libjpeg-turbo \
     freetype \
     openldap \
-    imagemagick \ # Provides runtime libs for imagick PHP extension and potentially CLI tools if Roundcube uses them
+    imagemagick \
     postgresql-libs \
     mariadb-connector-c \
     oniguruma \
