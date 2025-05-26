@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/github/v/release/Hezzit-Agency/roundcube?label=Latest%20Release" alt="Latest Release" />
   </a>
   <a href="https://github.com/Hezzit-Agency/roundcube/pkgs/container/roundcube">
-    <img src="https://img.shields.io/docker/image-size/ghcr.io/hezzit-agency/roundcube/latest?label=Image%20Size" alt="Docker Image Size" />
+    <img src="https://img.shields.io/docker/image-size/hezzit/roundcube?label=Image%20Size" alt="Docker Image Size" />
   </a>
 </p>
 
