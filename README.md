@@ -91,7 +91,7 @@ services:
       - ./roundcube_data/php.ini:/usr/local/etc/php/conf.d/zz-custom.ini:ro
     healthcheck:
       # Healthcheck ensures proper startup based on the RUN_MODE
-      test: ["CMD-SHELL", "MODE=$${RUN_MODE:-full}; if [ \"$$MODE\" = \"fpm-only\" ]; then supervisorctl status php-fpm | grep -q RUNNING; else supervisorctl status php-fpm | grep -q RUNNING && supervisorctl status nginx | grep -q RUNNING; fi"]
+      test: ["CMD-SHELL", "MODE=$${RUN_MODE:-full}; if [ \"$$MODE\" = \"fpm-only\" ]; then pgrep php-fpm > /dev/null; else pgrep php-fpm > /dev/null && pgrep nginx > /dev/null; fi"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -298,7 +298,6 @@ Special thanks to the creators and maintainers of the original [Roundcube Webmai
 Also, appreciation to the open-source communities behind:
 - [Nginx](https://nginx.org/) – Fast and flexible web server
 - [PHP-FPM](https://www.php.net/manual/en/install.fpm.php) – PHP FastCGI Process Manager
-- [Supervisor](http://supervisord.org/) – Process control system
 - [Alpine Linux](https://alpinelinux.org/) – Lightweight base image
 - [Docker](https://www.docker.com/) – The container platform powering this distribution
 

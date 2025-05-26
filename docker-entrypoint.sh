@@ -3,8 +3,7 @@
 # Entrypoint script for Roundcube container
 # Handles: Run mode selection, ENV var configurations (Upload Size, Memory Limit),
 #          DES Key security check (vs defaults.inc.php AND config.inc.php.sample) using PHP helper,
-#          Custom plugin/skin sync (using rsync),
-#          and starting Supervisor.
+#          Custom plugin/skin sync (using rsync).
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -147,22 +146,9 @@ fi
 
 
 # --- Execution Mode Selection ---
-# (Rest of the script: RUN_MODE check, PHP/Nginx config, rsync, exec supervisord)
+# (Rest of the script: RUN_MODE check, PHP/Nginx config, rsync)
 RUN_MODE_DEFAULT="full"
 RUN_MODE=${RUN_MODE:-$RUN_MODE_DEFAULT}
-SUPERVISOR_CONF_FILE="/etc/supervisor/supervisord-full.conf"
-
-if [ "$RUN_MODE" = "fpm-only" ]; then
-  echo "FPM-Only mode detected. Internal Nginx will NOT be started."
-  SUPERVISOR_CONF_FILE="/etc/supervisor/supervisord-fpm-only.conf"
-else
-  echo "Full mode (Nginx + FPM) detected."
-  # --- Upload Limit Configuration ---
-  UPLOAD_SIZE_DEFAULT="100M"
-  UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_DEFAULT}
-  echo "Adjusting Nginx client_max_body_size to: ${UPLOAD_SIZE}"
-  sed -i "s|client_max_body_size.*|client_max_body_size ${UPLOAD_SIZE};|" /etc/nginx/http.d/default.conf
-fi
 
 # --- PHP Configuration ---
 UPLOAD_SIZE_PHP_DEFAULT="100M"
@@ -201,6 +187,33 @@ sync_custom_files() {
 sync_custom_files "/custom_plugins" "/var/www/html/plugins"
 sync_custom_files "/custom_skins" "/var/www/html/skins"
 
-# Execute supervisord with the correct configuration file
-echo "Executing main command: supervisord with config $SUPERVISOR_CONF_FILE"
-exec /usr/bin/supervisord -c "$SUPERVISOR_CONF_FILE"
+if [ "$RUN_MODE" = "fpm-only" ]; then
+  echo "FPM-Only mode detected. Internal Nginx will NOT be started."
+  exec /usr/local/bin/php-fpm-cmd.sh
+else
+  echo "Full mode (Nginx + FPM) detected."
+  # --- Upload Limit Configuration ---
+  UPLOAD_SIZE_DEFAULT="100M"
+  UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-$UPLOAD_SIZE_DEFAULT}
+  echo "Adjusting Nginx client_max_body_size to: ${UPLOAD_SIZE}"
+  sed -i "s|client_max_body_size.*|client_max_body_size ${UPLOAD_SIZE};|" /etc/nginx/http.d/default.conf
+  
+  # Start PHP-FPM in the background
+  /usr/local/bin/php-fpm-cmd.sh &
+  PHP_PID=$!
+  # Start Nginx in the background
+  /usr/local/bin/nginx-cmd.sh &
+  NGINX_PID=$!
+  echo "Processes started: php-fpm PID=$PHP_PID, nginx PID=$NGINX_PID"
+  # Trap SIGTERM to gracefully shut down services
+  trap "echo 'SIGTERM received, stopping Nginx and PHP-FPM'; kill $PHP_PID $NGINX_PID 2>/dev/null" SIGTERM
+  # Wait for one of the processes to exit
+  wait -n $PHP_PID $NGINX_PID 2>/dev/null
+  echo "One of the processes has exited, shutting down the container..."
+  # Kill the remaining process if still running
+  kill $PHP_PID $NGINX_PID 2>/dev/null || true
+  # Wait for both processes to fully terminate
+  wait $PHP_PID 2>/dev/null || true
+  wait $NGINX_PID 2>/dev/null || true
+
+fi

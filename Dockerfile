@@ -31,7 +31,6 @@ RUN apk add --no-cache --virtual .build-deps \
 # Install runtime dependencies and necessary tools
 RUN apk add --no-cache \
         nginx \
-        supervisor \
         wget \
         tar \
         icu-libs \
@@ -79,15 +78,6 @@ RUN docker-php-ext-install -j$(nproc) \
 
 # Remove build dependencies to keep the image smaller
 RUN apk del .build-deps
-
-# Create directory for supervisor logs (optional, but good practice)
-RUN mkdir -p /var/log/supervisor
-
-# --- Configure Supervisor, Nginx, and Helper Scripts ---
-
-# Copy BOTH Supervisor configuration files
-COPY supervisord-full.conf /etc/supervisor/supervisord-full.conf
-COPY supervisord-fpm-only.conf /etc/supervisor/supervisord-fpm-only.conf
 
 # Copy cmd of running binaries
 COPY nginx-cmd.sh /usr/local/bin/nginx-cmd.sh
@@ -178,7 +168,3 @@ EXPOSE 80 9000
 
 # Define the Entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
-
-# Default command (will be passed to the entrypoint)
-# The entrypoint will add the "-c <correct_conf_file>"
-CMD ["/usr/bin/supervisord"]

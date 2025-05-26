@@ -255,8 +255,8 @@ services:
       - traefik.http.services.roundcube.loadbalancer.server.port=80
     healthcheck:
       # Healthcheck specific to the ghcr.io/hezzit-agency/roundcube image entrypoint logic
-      # It checks if supervisor is running the correct processes based on RUN_MODE
-      test: ["CMD-SHELL", "MODE=$${RUN_MODE:-full}; if [ \"$$MODE\" = \"fpm-only\" ]; then supervisorctl status php-fpm | grep -q RUNNING; else supervisorctl status php-fpm | grep -q RUNNING && supervisorctl status nginx | grep -q RUNNING; fi || exit 1"]
+      # ensures proper startup based on the RUN_MODE
+      test: ["CMD-SHELL", "MODE=$${RUN_MODE:-full}; if [ \"$$MODE\" = \"fpm-only\" ]; then pgrep php-fpm > /dev/null; else pgrep php-fpm > /dev/null && pgrep nginx > /dev/null; fi"]
       interval: 30s
       timeout: 10s
       retries: 3
