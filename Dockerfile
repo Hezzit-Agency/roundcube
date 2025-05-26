@@ -1,7 +1,7 @@
 # Complete Dockerfile for Roundcube with Nginx, PHP-FPM, and Entrypoint for Overlay
 
 # Use the official PHP FPM Alpine base image (already includes PHP and FPM)
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Roundcube version (can be changed at build time with --build-arg)
 ARG ROUNDCUBE_VERSION=1.6.10
