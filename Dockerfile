@@ -144,6 +144,10 @@ RUN sed -i '1i daemon off;' /etc/nginx/nginx.conf
 # Copy application code (with vendor dependencies) from the builder stage
 COPY --from=builder /var/www/html /var/www/html
 
+# Copy PHP extensions and config files from builder
+COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+
 # Copy cmd scripts
 COPY nginx-cmd.sh /usr/local/bin/nginx-cmd.sh
 COPY php-fpm-cmd.sh /usr/local/bin/php-fpm-cmd.sh
