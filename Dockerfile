@@ -1,5 +1,6 @@
 # Complete Dockerfile for Roundcube with Nginx, PHP-FPM, and Entrypoint for Overlay
 # Optimized for smaller image size using multi-stage builds
+# Uses mlocati/docker-php-extension-installer for PHP extensions
 
 # ---- Builder Stage ----
 # This stage will compile assets, download dependencies, and prepare the application.
@@ -14,39 +15,22 @@ ENV ROUNDCUBE_VERSION=${ROUNDCUBE_VERSION}
 WORKDIR /app
 
 # --- Install System Dependencies and Tools for Building ---
-# Install build-time dependencies for PHP extensions,
-# PHP packages for composer (if not already in base image),
-# and tools like wget, tar.
+# Install essential utilities.
+# install-php-extensions will handle the installation of build-base, autoconf, php-dev,
+# and specific -dev libraries required for PHP extensions.
 RUN apk add --no-cache \
-    # Build tools for PHP extensions
-    build-base \
-    autoconf \
-    # Development libraries for PHP extensions
-    icu-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    openldap-dev \
-    imagemagick-dev \
-    postgresql-dev \
-    mariadb-connector-c-dev \
-    oniguruma-dev \
-    # Utilities for downloading and extraction
     wget \
-    tar \
-    # PHP components often needed by Composer (explicitly adding for robustness)
-    php-json \
-    php-phar
+    tar
+    # php-json and php-phar for composer will be ensured by install-php-extensions
 
-# Install composer globally
-RUN wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer
+# Install docker-php-extension-installer
+# Using COPY --from is a clean way to get the script from its official image
+COPY --from=mlocati/docker-php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
 
-# Configure PHP extensions requiring options (e.g., GD)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-
-# Install PHP extensions required for Roundcube and common ones
-RUN docker-php-ext-install -j$(nproc) \
+# Install PHP extensions required for Roundcube and common ones using install-php-extensions
+# This script handles fetching -dev packages, configuring, compiling, and cleaning up.
+# It also handles core extensions like json, phar, ctype, fileinfo, opcache, tokenizer, iconv, xml.
+RUN install-php-extensions \
     zip \
     fileinfo \
     exif \
@@ -55,11 +39,20 @@ RUN docker-php-ext-install -j$(nproc) \
     pdo_sqlite \
     pdo_mysql \
     pdo_pgsql \
-    gd \
+    gd -- --with-freetype --with-jpeg \
     intl \
     mbstring \
     ctype \
-    opcache
+    opcache \
+    imagick \
+    xml \
+    iconv \
+    tokenizer \
+    json \
+    phar
+
+# Install composer globally
+RUN wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/usr/local/bin --filename=composer
 
 # --- Download and Prepare Roundcube Application ---
 
@@ -112,27 +105,29 @@ WORKDIR /var/www/html
 
 # --- Install Runtime Dependencies and Tools ---
 # Install only essential runtime dependencies and tools.
-# Development libraries (-dev) are not needed here.
+# Development libraries (-dev) are not needed here. These are the shared libraries for the compiled extensions.
 RUN apk add --no-cache \
     nginx \
     # Runtime libraries for PHP extensions (must match what was compiled in builder)
     icu-libs \
-    libzip \
+    # libzip is often a meta-package on alpine, or libzip-dev installs libzip.so.
+    # install-php-extensions usually links zip statically or ensures the lib is there.
+    # If zip extension fails to load, add 'libzip' here.
     libpng \
     libjpeg-turbo \
     freetype \
     openldap \
-    imagemagick \
+    imagemagick-libs \
     postgresql-libs \
-    mariadb-connector-c \
-    oniguruma \
+    mariadb-connector-c-libs \
+    libxml2 \
+    # oniguruma is for mbstring if not statically linked. mbstring in php:alpine is usually self-contained or uses system's.
+    # If mbstring issues, add 'oniguruma' or 'oniguruma-libs'
     # Other necessary tools for runtime
     rsync \
     openssl \
     sed
     # The php:fpm-alpine image already has the www-data user and group.
-    # If not, you would add them here, e.g.:
-    # && addgroup -g 82 -S www-data && adduser -u 82 -D -S -G www-data www-data || true
 
 # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
 # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
@@ -158,8 +153,8 @@ COPY check-key.php /usr/local/bin/check-key.php
 
 # Set execute permissions for copied scripts in a single layer for efficiency
 RUN chmod +x /usr/local/bin/nginx-cmd.sh \
-               /usr/local/bin/php-fpm-cmd.sh \
-               /usr/local/bin/check-key.php
+                /usr/local/bin/php-fpm-cmd.sh \
+                /usr/local/bin/check-key.php
 
 # Copy and set execute permission for the entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
@@ -187,7 +182,7 @@ RUN echo "----> Setting base ownership and permissions for /var/www/html..." \
 # Step 4.4: Clean up temporary files and apk cache from the final image
 RUN echo "----> Cleaning up temporary files and caches..." \
     && rm -rf /tmp/* \
-               /var/cache/apk/* # Crucial for reducing final image size
+                /var/cache/apk/* # Crucial for reducing final image size
 
 # Define Volumes for persistent data and main external configuration
 # Note that /plugins and /skins are NOT defined here, as they will be managed
