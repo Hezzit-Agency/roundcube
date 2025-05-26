@@ -78,6 +78,11 @@ RUN apk add --no-cache --virtual .build-deps \
 COPY supervisord-full.conf /etc/supervisor/supervisord-full.conf
 COPY supervisord-fpm-only.conf /etc/supervisor/supervisord-fpm-only.conf
 
+# Copy cmd of running binaries
+COPY nginx-cmd.sh /usr/local/bin/nginx-cmd.sh
+COPY php-fpm-cmd.sh /usr/local/bin/php-fpm-cmd.sh
+RUN chmod +x /usr/local/bin/php-fpm-cmd.sh /usr/local/bin/nginx-cmd.sh
+
 # Copy Nginx configuration (only used in 'full' mode)
 COPY nginx-default.conf /etc/nginx/http.d/default.conf
 

@@ -49,6 +49,7 @@ if [ ! -f "$USER_CONFIG_FILE" ]; then
   echo >&2 "https://raw.githubusercontent.com/Hezzit-Agency/roundcube/main/roundcube_data/config.inc.php.sample"
   echo >&2 "Container startup aborted."
   echo >&2 "############################################################"
+  sleep 60
   exit 1
 fi
 
@@ -86,14 +87,15 @@ if [ -z "$USER_DES_KEY" ]; then
    echo >&2 ""
    echo >&2 "Container startup aborted."
    echo >&2 "############################################################"
+   sleep 60
    exit 1
 fi
 
-SKIP_CHECK="${ROUNDCUBE_SKIP_DES_KEY_CHECK:-false}"
+VALIDATE_DES_KEY="${VALIDATE_DES_KEY:-true}"
 
 
-if [[ "$SKIP_CHECK" == "true" || "$SKIP_CHECK" == "1" ]]; then
-	echo "WARNING: DES_KEY Checker disabled by environment variable."
+if [[ "$VALIDATE_DES_KEY" == "false" || "$VALIDATE_DES_KEY" == "0" ]]; then
+	echo "WARNING: DES_KEY Validate disabled by environment variable."
 else
 	# 4. Check key length
 	key_len=${#USER_DES_KEY}
@@ -136,6 +138,7 @@ else
 	   echo >&2 ""
 	   echo >&2 "Container startup aborted for security reasons."
 	   echo >&2 "############################################################"
+	  sleep 60
 	  exit 1
 	fi
 	echo "DES key check passed (different from defaults/samples and correct length)."

@@ -26,6 +26,8 @@ Welcome to the **Dockerized Roundcube** setup from **Hezzit** — fast to deploy
 > 📦 Image: `ghcr.io/hezzit-agency/roundcube`
 
 ---
+### [🚀 Full Stack Mail Server Deployment Guide](https://github.com/Hezzit-Agency/roundcube/blob/main/MAIL-SERVER.md)
+---
 
 ## ⚡ Quick Launch
 
@@ -182,7 +184,7 @@ $config['product_name'] = 'Roundcube Webmail';
 // MUST be changed to a random 24-byte string for security!
 // You can generate one using: openssl rand -base64 24
 // WARNING: Changing this key after users have logged in might cause issues.
-$config['des_key'] = 'PLEASE_CHANGE_THIS_24BYTE_KEY!';
+$config['des_key'] = '!_PLEASE_CHANGE_THIS_24BYTE_KEY_!';
 
 // List of active plugins (in plugins/ directory)
 $config['plugins'] = [
