@@ -118,7 +118,7 @@ RUN apk add --no-cache \
     postgresql-libs \
     mariadb-libs \
     libxml2 \
-    oniguruma-libs \
+    oniguruma \
     rsync \
     openssl \
     sed
