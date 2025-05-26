@@ -114,7 +114,7 @@ RUN apk update && apk add --no-cache \
     libjpeg-turbo \
     freetype \
     openldap \
-    imagemagick-libs \
+    imagemagick \
     postgresql-libs \
     mariadb-libs \
     libxml2 \
