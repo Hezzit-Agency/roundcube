@@ -109,20 +109,16 @@ RUN apk add --no-cache \
     nginx \
     # Runtime libraries for PHP extensions (must match what was compiled in builder)
     icu-libs \
-    # libzip is often a meta-package on alpine, or libzip-dev installs libzip.so.
-    # install-php-extensions usually links zip statically or ensures the lib is there.
-    # If zip extension fails to load, add 'libzip' here.
+    libzip \
     libpng \
     libjpeg-turbo \
     freetype \
     openldap \
     imagemagick-libs \
     postgresql-libs \
-    mariadb-connector-c-libs \
+    mariadb-libs \
     libxml2 \
-    # oniguruma is for mbstring if not statically linked. mbstring in php:alpine is usually self-contained or uses system's.
-    # If mbstring issues, add 'oniguruma' or 'oniguruma-libs'
-    # Other necessary tools for runtime
+    oniguruma-libs \
     rsync \
     openssl \
     sed
