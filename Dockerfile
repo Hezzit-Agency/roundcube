@@ -105,7 +105,7 @@ WORKDIR /var/www/html
 # --- Install Runtime Dependencies and Tools ---
 # Install only essential runtime dependencies and tools.
 # Development libraries (-dev) are not needed here. These are the shared libraries for the compiled extensions.
-RUN apk add --no-cache \
+RUN apk update && apk add --no-cache \
     nginx \
     # Runtime libraries for PHP extensions (must match what was compiled in builder)
     icu-libs \
