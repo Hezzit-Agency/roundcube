@@ -113,6 +113,7 @@ RUN apk add --no-cache \
     mariadb-connector-c \
     oniguruma \
     openssl \
+    rsync \
     sed
 
 # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
@@ -128,6 +129,18 @@ COPY --from=builder /var/www/html /var/www/html
 # Copy PHP extensions and config files from builder
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+
+# Disable unused PHP extensions to avoid startup warnings
+RUN if command -v docker-php-ext-disable >/dev/null 2>&1; then \
+      # use the helper script if available
+      docker-php-ext-disable gd imagick ldap; \
+    else \
+      # otherwise rename the INI files so PHP won’t load them
+      for e in gd imagick ldap; do \
+        ini=/usr/local/etc/php/conf.d/docker-php-ext-$e.ini; \
+        [ -f "$ini" ] && mv "$ini" "$ini.disabled"; \
+      done; \
+    fi
 
 # Copy cmd scripts
 COPY nginx-cmd.sh /usr/local/bin/nginx-cmd.sh
