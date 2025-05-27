@@ -105,9 +105,8 @@ WORKDIR /var/www/html
 # --- Install Runtime Dependencies and Tools ---
 # Install only essential runtime dependencies and tools.
 # Development libraries (-dev) are not needed here. These are the shared libraries for the compiled extensions.
-RUN apk update && apk add --no-cache \
+RUN apk add --no-cache \
     nginx \
-    # Runtime libraries for PHP extensions (must match what was compiled in builder)
     icu-libs \
     libzip \
     libpng \
@@ -116,13 +115,11 @@ RUN apk update && apk add --no-cache \
     openldap \
     imagemagick \
     postgresql-libs \
-    mariadb-libs \
-    libxml2 \
+    mariadb-connector-c \
     oniguruma \
     rsync \
     openssl \
     sed
-    # The php:fpm-alpine image already has the www-data user and group.
 
 # === EDIT NGINX.CONF TO ENSURE FOREGROUND (CORRECTED DIRECTIVE) ===
 # Delete any existing 'daemon' or 'daemonize' directive line (commented or not)
