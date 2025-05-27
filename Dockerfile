@@ -109,15 +109,9 @@ RUN apk add --no-cache \
     nginx \
     icu-libs \
     libzip \
-    libpng \
-    libjpeg-turbo \
-    freetype \
-    openldap \
-    imagemagick \
     postgresql-libs \
     mariadb-connector-c \
     oniguruma \
-    rsync \
     openssl \
     sed
 
@@ -174,7 +168,9 @@ RUN echo "----> Setting base ownership and permissions for /var/www/html..." \
 # Step 4.4: Clean up temporary files and apk cache from the final image
 RUN echo "----> Cleaning up temporary files and caches..." \
     && rm -rf /tmp/* \
-                /var/cache/apk/* # Crucial for reducing final image size
+				# Crucial for reducing final image size
+                /var/cache/apk/* \
+				/usr/src/php.tar.xz \
 
 # Define Volumes for persistent data and main external configuration
 # Note that /plugins and /skins are NOT defined here, as they will be managed
