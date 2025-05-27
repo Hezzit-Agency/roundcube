@@ -184,7 +184,7 @@ RUN echo "----> Cleaning up temporary files and caches..." \
     && rm -rf /tmp/* \
 				# Crucial for reducing final image size
                 /var/cache/apk/* \
-				/usr/src/php.tar.xz \
+				/usr/src/php.tar.xz
 
 # Define Volumes for persistent data and main external configuration
 # Note that /plugins and /skins are NOT defined here, as they will be managed
