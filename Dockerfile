@@ -125,6 +125,7 @@ RUN sed -i '1i daemon off;' /etc/nginx/nginx.conf
 
 # Copy application code (with vendor dependencies) from the builder stage
 COPY --from=builder /var/www/html /var/www/html
+RUN cp -r /var/www/html/SQL /usr/local/share/roundcube-sql-template
 
 # Copy PHP extensions and config files from builder
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
@@ -187,7 +188,8 @@ RUN echo "----> Cleaning up temporary files and caches..." \
 
 # Define Volumes for persistent data and main external configuration
 # Note that /plugins and /skins are NOT defined here, as they will be managed
-# by the entrypoint script using mounts at /custom_plugins and /custom_skins
+# by the entrypoint script using mounts at /custom_plugins and /custom_skins\
+RUN mkdir -p /var/www/html/SQL /var/www/html/logs /var/www/html/temp
 VOLUME /var/www/html/SQL /var/www/html/logs /var/www/html/temp
 
 # Expose the Nginx port (80) and the PHP-FPM port (9000)

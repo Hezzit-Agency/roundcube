@@ -187,6 +187,15 @@ sync_custom_files() {
 sync_custom_files "/custom_plugins" "/var/www/html/plugins"
 sync_custom_files "/custom_skins" "/var/www/html/skins"
 
+# If sqlite.initial.sql doesn't exist on the volume, copy it from the template
+if [ ! -f /var/www/html/SQL/sqlite.initial.sql ]; then
+  cp -r /usr/local/share/roundcube-sql-template/* /var/www/html/SQL/
+fi
+
+# Fix volumes perms
+chown -R www-data:www-data /var/www/html/SQL /var/www/html/logs /var/www/html/temp
+chmod -R u+rwX /var/www/html/SQL /var/www/html/logs /var/www/html/temp
+
 if [ "$RUN_MODE" = "fpm-only" ]; then
   echo "FPM-Only mode detected. Internal Nginx will NOT be started."
   exec /usr/local/bin/php-fpm-cmd.sh
