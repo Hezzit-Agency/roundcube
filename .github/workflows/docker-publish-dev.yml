@@ -26,11 +26,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push dev Docker image
+      - name: Build and push dev Docker image with cache
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/hezzit-agency/roundcube:dev
-
+          cache-from: type=registry,ref=ghcr.io/hezzit-agency/roundcube:buildcache
+          cache-to:   type=registry,ref=ghcr.io/hezzit-agency/roundcube:buildcache,mode=max
+          tags: |
+            ghcr.io/hezzit-agency/roundcube:dev
