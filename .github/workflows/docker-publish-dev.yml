@@ -39,6 +39,7 @@ jobs:
           PLATFORM_SUFFIX=$(echo ${{ matrix.platform }} | tr '/' '-')
           OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_BASE_NAME_VALUE="ghcr.io/${OWNER_LOWERCASE}/roundcube"
+
           echo "PLATFORM_SUFFIX=${PLATFORM_SUFFIX}" >> $GITHUB_ENV
           echo "IMAGE_BASE_NAME=${IMAGE_BASE_NAME_VALUE}" >> $GITHUB_ENV
           echo "LOCAL_UNSLIMMED_IMAGE_TAG=${IMAGE_BASE_NAME_VALUE}:dev-unslimmed-local-${PLATFORM_SUFFIX}" >> $GITHUB_ENV
@@ -60,14 +61,14 @@ jobs:
         run: |
           echo "Installing Mint..."
           curl -sL https://raw.githubusercontent.com/mintoolkit/mint/master/scripts/install-mint.sh | sudo -E bash -
-          echo "Mint version:"
-          sudo mint version
+          echo "Mint installation script finished."
 
       - name: Slim image with Mint for ${{ matrix.platform }}
         run: |
           echo "Slimming image ${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }} for ${{ matrix.platform }}"
           echo "Output will be tagged as ${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
           sudo mint slim --target "${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }}" --tag "${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
+          
           echo "Docker images after slimming for ${{ matrix.platform }}:"
           docker images ${{ env.IMAGE_BASE_NAME }}
 
@@ -94,14 +95,16 @@ jobs:
           OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_BASE_NAME="ghcr.io/${OWNER_LOWERCASE}/roundcube"
           FINAL_MANIFEST_TAG="${IMAGE_BASE_NAME}:dev"
+          
           SLIMMED_AMD64_COMPONENT_TAG="${IMAGE_BASE_NAME}:dev-slim-component-linux-amd64"
           SLIMMED_ARM64_COMPONENT_TAG="${IMAGE_BASE_NAME}:dev-slim-component-linux-arm64"
+          
           echo "FINAL_MANIFEST_TAG=${FINAL_MANIFEST_TAG}" >> $GITHUB_ENV
           echo "IMAGES_FOR_MANIFEST=${SLIMMED_AMD64_COMPONENT_TAG} ${SLIMMED_ARM64_COMPONENT_TAG}" >> $GITHUB_ENV
           echo "SLIMMED_AMD64_COMPONENT_TAG=${SLIMMED_AMD64_COMPONENT_TAG}" >> $GITHUB_ENV
           echo "SLIMMED_ARM64_COMPONENT_TAG=${SLIMMED_ARM64_COMPONENT_TAG}" >> $GITHUB_ENV
 
-      - name: Create and push manifest list for the :dev tag
+      - name: Create and push list for the :dev tag
         run: |
           echo "Creating manifest list for final tag: ${{ env.FINAL_MANIFEST_TAG }}"
           echo "Source component images: ${{ env.IMAGES_FOR_MANIFEST }}"
@@ -112,6 +115,6 @@ jobs:
             
           docker manifest annotate ${{ env.FINAL_MANIFEST_TAG }} ${{ env.SLIMMED_AMD64_COMPONENT_TAG }} --os linux --arch amd64
           docker manifest annotate ${{ env.FINAL_MANIFEST_TAG }} ${{ env.SLIMMED_ARM64_COMPONENT_TAG }} --os linux --arch arm64
-
+            
           echo "Pushing manifest list for ${{ env.FINAL_MANIFEST_TAG }}"
           docker manifest push ${{ env.FINAL_MANIFEST_TAG }}
