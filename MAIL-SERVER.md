@@ -256,7 +256,7 @@ services:
     healthcheck:
       # Healthcheck specific to the ghcr.io/hezzit-agency/roundcube image entrypoint logic
       # ensures proper startup based on the RUN_MODE
-      test: ["CMD-SHELL", "MODE=$${RUN_MODE:-full}; if [ \"$$MODE\" = \"fpm-only\" ]; then pgrep php-fpm > /dev/null; else pgrep php-fpm > /dev/null && pgrep nginx > /dev/null; fi"]
+      test: ["CMD", "/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

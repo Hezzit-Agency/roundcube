@@ -160,6 +160,10 @@ RUN chmod +x /usr/local/bin/nginx-cmd.sh \
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
+# Copy and set execute permission for the healthcheck script
+COPY healthcheck.sh /healthcheck.sh
+RUN chmod +x /healthcheck.sh
+
 # --- Finalize Permissions and Clean Up ---
 
 # Step 4.1: Create Dirs (temp, logs, SQL) required by Roundcube if not already part of copied app
