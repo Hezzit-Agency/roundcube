@@ -37,7 +37,8 @@ jobs:
         id: image_vars
         run: |
           PLATFORM_SUFFIX=$(echo ${{ matrix.platform }} | tr '/' '-')
-          IMAGE_BASE_NAME_VALUE="ghcr.io/${{ github.repository_owner }}/roundcube"
+          OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_BASE_NAME_VALUE="ghcr.io/${OWNER_LOWERCASE}/roundcube"
           echo "PLATFORM_SUFFIX=${PLATFORM_SUFFIX}" >> $GITHUB_ENV
           echo "IMAGE_BASE_NAME=${IMAGE_BASE_NAME_VALUE}" >> $GITHUB_ENV
           echo "LOCAL_UNSLIMMED_IMAGE_TAG=${IMAGE_BASE_NAME_VALUE}:dev-unslimmed-local-${PLATFORM_SUFFIX}" >> $GITHUB_ENV
@@ -67,7 +68,6 @@ jobs:
           echo "Slimming image ${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }} for ${{ matrix.platform }}"
           echo "Output will be tagged as ${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
           sudo mint slim --target "${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }}" --tag "${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
-          
           echo "Docker images after slimming for ${{ matrix.platform }}:"
           docker images ${{ env.IMAGE_BASE_NAME }}
 
@@ -91,12 +91,11 @@ jobs:
       - name: Define final manifest tag and source component images
         id: manifest_vars
         run: |
-          IMAGE_BASE_NAME="ghcr.io/${{ github.repository_owner }}/roundcube"
+          OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_BASE_NAME="ghcr.io/${OWNER_LOWERCASE}/roundcube"
           FINAL_MANIFEST_TAG="${IMAGE_BASE_NAME}:dev"
-          
           SLIMMED_AMD64_COMPONENT_TAG="${IMAGE_BASE_NAME}:dev-slim-component-linux-amd64"
           SLIMMED_ARM64_COMPONENT_TAG="${IMAGE_BASE_NAME}:dev-slim-component-linux-arm64"
-          
           echo "FINAL_MANIFEST_TAG=${FINAL_MANIFEST_TAG}" >> $GITHUB_ENV
           echo "IMAGES_FOR_MANIFEST=${SLIMMED_AMD64_COMPONENT_TAG} ${SLIMMED_ARM64_COMPONENT_TAG}" >> $GITHUB_ENV
           echo "SLIMMED_AMD64_COMPONENT_TAG=${SLIMMED_AMD64_COMPONENT_TAG}" >> $GITHUB_ENV
@@ -113,6 +112,6 @@ jobs:
             
           docker manifest annotate ${{ env.FINAL_MANIFEST_TAG }} ${{ env.SLIMMED_AMD64_COMPONENT_TAG }} --os linux --arch amd64
           docker manifest annotate ${{ env.FINAL_MANIFEST_TAG }} ${{ env.SLIMMED_ARM64_COMPONENT_TAG }} --os linux --arch arm64
-            
+
           echo "Pushing manifest list for ${{ env.FINAL_MANIFEST_TAG }}"
           docker manifest push ${{ env.FINAL_MANIFEST_TAG }}
