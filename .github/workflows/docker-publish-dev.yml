@@ -67,7 +67,7 @@ jobs:
         run: |
           echo "Slimming image ${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }} for ${{ matrix.platform }}"
           echo "Output will be tagged as ${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
-          sudo mint slim --target "${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }}" --tag "${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
+          sudo mint slim --http-probe-off --target "${{ env.LOCAL_UNSLIMMED_IMAGE_TAG }}" --tag "${{ env.PLATFORM_SLIM_COMPONENT_TAG }}"
           
           echo "Docker images after slimming for ${{ matrix.platform }}:"
           docker images ${{ env.IMAGE_BASE_NAME }}
