@@ -118,3 +118,4 @@ jobs:
             
           echo "Pushing manifest list for ${{ env.FINAL_MANIFEST_TAG }}"
           docker manifest push ${{ env.FINAL_MANIFEST_TAG }}
+          
