@@ -16,7 +16,12 @@ CUSTOM_PLUGINS_SRC_DIR="/custom_plugins"
 CUSTOM_SKINS_SRC_DIR="/custom_skins"
 PLUGINS_DEST_DIR="$APP_BASE_DIR/plugins"
 SKINS_DEST_DIR="$APP_BASE_DIR/skins"
-NGINX_DEFAULT_CONF_FILE="/etc/nginx/http.d/default.conf"
+
+NGINX_ETC_DIR="/etc/nginx"
+NGINX_MAIN_CONF_FILE="$NGINX_ETC_DIR/nginx.conf"
+NGINX_HTTP_D_DIR="$NGINX_ETC_DIR/http.d"
+NGINX_DEFAULT_CONF_FILE="$NGINX_HTTP_D_DIR/default.conf"
+
 SQL_TEMPLATE_DIR="/usr/local/share/roundcube-sql-template"
 SQL_TEMPLATE_FILE_SQLITE="$SQL_TEMPLATE_DIR/sqlite.initial.sql"
 
@@ -26,6 +31,15 @@ PHP_FPM_WWW_CONF_FILE="${PHP_FPM_POOL_DIR}/www.conf"
 
 access_path() {
     if [ -e "$1" ]; then
+        ls -ld "$1" > /dev/null 2>&1 || true
+    fi
+}
+
+access_and_read_head() {
+    if [ -f "$1" ]; then
+        ls -ld "$1" > /dev/null 2>&1 || true
+        head -n 1 "$1" > /dev/null 2>&1 || true
+    elif [ -e "$1" ]; then # If it's a directory or other type, just ls
         ls -ld "$1" > /dev/null 2>&1 || true
     fi
 }
@@ -70,28 +84,30 @@ $CUSTOM_SKINS_SRC_DIR \
 $PHP_CONF_DIR \
 $SQL_TEMPLATE_DIR \
 $SCRIPTS_DIR \
-/etc/nginx/http.d \
-/etc/ssl \
-/tmp \
+$NGINX_ETC_DIR \
+$NGINX_HTTP_D_DIR \
+$PHP_FPM_POOL_DIR \
 /usr/local/etc \
-$PHP_FPM_POOL_DIR"
+/etc/ssl \
+/tmp"
 access_path "/"
 
 for dir_path in $DIRECTORIES_TO_ACCESS; do
     access_path "$dir_path"
 done
 
-access_path "$NGINX_DEFAULT_CONF_FILE"
+access_and_read_head "$NGINX_MAIN_CONF_FILE"
+access_and_read_head "$NGINX_DEFAULT_CONF_FILE"
+access_and_read_head "$PHP_FPM_MAIN_CONF_FILE"
+access_and_read_head "$PHP_FPM_WWW_CONF_FILE"
 access_path "$SQL_TEMPLATE_FILE_SQLITE"
-access_path "$PHP_FPM_MAIN_CONF_FILE"
-access_path "$PHP_FPM_WWW_CONF_FILE"
 
 access_path "$PHP_EXECUTABLE_PATH"
 PHP_INFO_OUTPUT=$("$PHP_EXECUTABLE_PATH" -i)
 
 PHP_INI_MAIN_FILE=$(echo "$PHP_INFO_OUTPUT" | grep -i '^Loaded Configuration File' | awk '{print $NF}' || true)
 if [ -n "$PHP_INI_MAIN_FILE" ] && [ "$PHP_INI_MAIN_FILE" != "(none)" ] && [ -f "$PHP_INI_MAIN_FILE" ]; then
-    access_path "$PHP_INI_MAIN_FILE"
+    access_and_read_head "$PHP_INI_MAIN_FILE"
 fi
 
 PARSED_INI_FILES=$(echo "$PHP_INFO_OUTPUT" | grep -i '^Additional .ini files parsed' | sed -e 's/Additional .ini files parsed => //g' || true)
@@ -99,7 +115,7 @@ if [ -n "$PARSED_INI_FILES" ] && [ "$PARSED_INI_FILES" != "(none)" ]; then
     echo "$PARSED_INI_FILES" | tr ',' '\n' | while read -r ini_file_path; do
         trimmed_ini_file_path=$(echo "$ini_file_path" | awk '{$1=$1};1')
         if [ -n "$trimmed_ini_file_path" ]; then
-            access_path "$trimmed_ini_file_path"
+            access_and_read_head "$trimmed_ini_file_path"
         fi
     done
 fi
@@ -130,7 +146,8 @@ $PHP_EXECUTABLE_PATH \
 /usr/bin/awk \
 /usr/bin/grep \
 /usr/bin/xargs \
-/usr/bin/tr"
+/usr/bin/tr \
+/usr/bin/head"
 
 for cmd_path_loop in $TARGET_EXECUTABLES; do
     execute_binary_for_discovery "$cmd_path_loop"
