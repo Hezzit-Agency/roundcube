@@ -20,9 +20,23 @@ NGINX_DEFAULT_CONF_FILE="/etc/nginx/http.d/default.conf"
 SQL_TEMPLATE_DIR="/usr/local/share/roundcube-sql-template"
 SQL_TEMPLATE_FILE_SQLITE="$SQL_TEMPLATE_DIR/sqlite.initial.sql"
 
+PHP_FPM_MAIN_CONF_FILE="/usr/local/etc/php-fpm.conf"
+PHP_FPM_POOL_DIR="/usr/local/etc/php-fpm.d"
+PHP_FPM_WWW_CONF_FILE="${PHP_FPM_POOL_DIR}/www.conf"
+
 access_path() {
     if [ -e "$1" ]; then
         ls -ld "$1" > /dev/null 2>&1 || true
+    fi
+}
+
+access_project_shell_script() {
+    local script_path="$1"
+    if [ -f "$script_path" ]; then
+        ls -l "$script_path" > /dev/null 2>&1 || true
+        if head -n 1 "$script_path" | grep -q -e "/bin/sh" -e "/usr/bin/env sh"; then
+            sh -n "$script_path" > /dev/null 2>&1 || true
+        fi
     fi
 }
 
@@ -58,7 +72,9 @@ $SQL_TEMPLATE_DIR \
 $SCRIPTS_DIR \
 /etc/nginx/http.d \
 /etc/ssl \
-/tmp"
+/tmp \
+/usr/local/etc \
+$PHP_FPM_POOL_DIR"
 access_path "/"
 
 for dir_path in $DIRECTORIES_TO_ACCESS; do
@@ -67,6 +83,8 @@ done
 
 access_path "$NGINX_DEFAULT_CONF_FILE"
 access_path "$SQL_TEMPLATE_FILE_SQLITE"
+access_path "$PHP_FPM_MAIN_CONF_FILE"
+access_path "$PHP_FPM_WWW_CONF_FILE"
 
 access_path "$PHP_EXECUTABLE_PATH"
 PHP_INFO_OUTPUT=$("$PHP_EXECUTABLE_PATH" -i)
@@ -118,10 +136,10 @@ for cmd_path_loop in $TARGET_EXECUTABLES; do
     execute_binary_for_discovery "$cmd_path_loop"
 done
 
+access_project_shell_script "$PHP_FPM_CMD_SCRIPT_PATH"
+access_project_shell_script "$NGINX_CMD_SCRIPT_PATH"
+access_project_shell_script "$HEALTHCHECK_SCRIPT_PATH"
 access_path "$CHECK_KEY_SCRIPT_PATH"
-access_path "$PHP_FPM_CMD_SCRIPT_PATH"
-access_path "$NGINX_CMD_SCRIPT_PATH"
-access_path "$HEALTHCHECK_SCRIPT_PATH"
 
 if [ -d "$APP_BASE_DIR" ]; then
     find "$APP_BASE_DIR" -print0 | while IFS= read -r -d $'\0' file_or_dir; do
