@@ -164,6 +164,10 @@ RUN chmod +x /docker-entrypoint.sh
 COPY healthcheck.sh /healthcheck.sh
 RUN chmod +x /healthcheck.sh
 
+# Copy and set execute permission for the mint-slim script
+COPY mint-slim.sh /mint-slim.sh
+RUN chmod +x /mint-slim.sh
+
 # --- Finalize Permissions and Clean Up ---
 
 # Step 4.1: Create Dirs (temp, logs, SQL) required by Roundcube if not already part of copied app

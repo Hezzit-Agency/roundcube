@@ -8,6 +8,12 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+if [ -z "$RUN_MODE" ]; then
+  /mint-slim.sh
+  echo "! RUN MODE VARIABLE NOT SET !"
+  exit 0
+fi
+
 # --- BEGIN: Function Definition ---
 # Function to call the PHP helper script to extract the key
 # Argument 1: Path to the config file
