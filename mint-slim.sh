@@ -78,9 +78,9 @@ if [ -n "$PHP_INI_MAIN_FILE" ] && [ "$PHP_INI_MAIN_FILE" != "(none)" ] && [ -f "
     access_path "$PHP_INI_MAIN_FILE"
 fi
 
-PARSED_INI_FILES=$(echo "$PHP_INFO_OUTPUT" | grep -i '^Additional .ini files parsed' | sed -e 's/Additional .ini files parsed => //g' -e 's/,(?![^()]*\))/ /g' || true)
+PARSED_INI_FILES=$(echo "$PHP_INFO_OUTPUT" | grep -i '^Additional .ini files parsed' | sed -e 's/Additional .ini files parsed => //g' || true)
 if [ -n "$PARSED_INI_FILES" ] && [ "$PARSED_INI_FILES" != "(none)" ]; then
-    echo "$PARSED_INI_FILES" | tr ',' ' ' | xargs -n1 echo | while read -r ini_file_path; do
+    echo "$PARSED_INI_FILES" | tr ',' '\n' | while read -r ini_file_path; do
         trimmed_ini_file_path=$(echo "$ini_file_path" | awk '{$1=$1};1')
         if [ -n "$trimmed_ini_file_path" ]; then
             access_path "$trimmed_ini_file_path"
