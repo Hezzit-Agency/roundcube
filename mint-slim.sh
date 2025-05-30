@@ -1,5 +1,4 @@
 #!/bin/sh
-
 set -e
 
 APP_BASE_DIR="/var/www/html"
@@ -27,21 +26,20 @@ access_path() {
     fi
 }
 
-execute_safely_for_version() {
-    if [ -x "$1" ]; then
-        case "$1" in
-            */nginx)
-                "$1" -V > /dev/null 2>&1 || true
-                ;;
-            */php-fpm)
-                "$1" -v > /dev/null 2>&1 || true
-                ;;
-            *)
-                access_path "$1"
-                ;;
-        esac
+execute_binary_for_discovery() {
+    local cmd_to_run="$1"
+    if [ -x "$cmd_to_run" ]; then
+        if "$cmd_to_run" --version > /dev/null 2>&1; then :
+        elif "$cmd_to_run" -v > /dev/null 2>&1; then :
+        elif "$cmd_to_run" -V > /dev/null 2>&1; then :
+        elif "$cmd_to_run" --help > /dev/null 2>&1; then :
+        elif [ "$cmd_to_run" = "/bin/sh" ] || [ "$cmd_to_run" = "/usr/bin/env" ]; then
+             "$cmd_to_run" ":" > /dev/null 2>&1 || true
+        else
+             access_path "$cmd_to_run"
+        fi
     else
-        access_path "$1"
+        access_path "$cmd_to_run"
     fi
 }
 
@@ -94,7 +92,10 @@ fi
     fi
 done
 
-TARGET_EXECUTABLES_LS="\
+TARGET_EXECUTABLES="\
+$PHP_FPM_BINARY_PATH \
+$NGINX_BINARY_PATH \
+$PHP_EXECUTABLE_PATH \
 /usr/bin/openssl \
 /usr/bin/rsync \
 /usr/bin/pgrep \
@@ -113,13 +114,9 @@ TARGET_EXECUTABLES_LS="\
 /usr/bin/xargs \
 /usr/bin/tr"
 
-for cmd_path in $TARGET_EXECUTABLES_LS; do
-    access_path "$cmd_path"
+for cmd_path_loop in $TARGET_EXECUTABLES; do
+    execute_binary_for_discovery "$cmd_path_loop"
 done
-
-execute_safely_for_version "$PHP_FPM_BINARY_PATH"
-execute_safely_for_version "$NGINX_BINARY_PATH"
-access_path "$PHP_EXECUTABLE_PATH"
 
 access_path "$CHECK_KEY_SCRIPT_PATH"
 access_path "$PHP_FPM_CMD_SCRIPT_PATH"
