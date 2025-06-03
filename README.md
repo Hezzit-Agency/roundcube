@@ -289,6 +289,20 @@ To run it interactively:
 docker run -it hezzit-roundcube:dev
 ```
 
+### 🛪 Compact Image
+
+If you want a smaller image footprint, you can use [docker-slim](https://github.com/docker-slim/docker-slim):
+
+```bash
+docker-slim build --tag hezzit-roundcube:slim .
+```
+
+Alternatively, add the `--squash` option during build (if supported):
+
+```bash
+docker build --squash -t hezzit-roundcube:squashed .
+```
+
 ---
 
 ## 🙏 Acknowledgements
