@@ -5,6 +5,6 @@ if [ "$MODE" = "fpm-only" ]; then
   pgrep php-fpm > /dev/null
   exit $?
 else
-  pgrep php-fpm > /dev/null && pgrep nginx > /dev/null
-  exit $?
+  pgrep php-fpm > /dev/null && pgrep nginx > /dev/null
+  exit $?
 fi
