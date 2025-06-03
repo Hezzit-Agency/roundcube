@@ -307,7 +307,7 @@ are actually needed.
 2. Generate the slim variant using the helper script:
 
    ```bash
-   docker-slim build --http-probe-off --entrypoint /mint-slim.sh hezzit-roundcube:dev
+   docker-slim build --http-probe-off hezzit-roundcube:dev
    ```
 
 3. Use the resulting image tagged with the `-slim` suffix.
