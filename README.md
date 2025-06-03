@@ -289,6 +289,29 @@ To run it interactively:
 docker run -it hezzit-roundcube:dev
 ```
 
+## 🍃 Slim Image Generation
+
+The script `mint-slim.sh` is included in the container to assist
+`docker-slim` during the build process. It touches important paths and
+executes key commands so the final slim image keeps only the files that
+are actually needed.
+
+### Quick Steps
+
+1. Build the regular image:
+
+   ```bash
+   docker build -t hezzit-roundcube:dev .
+   ```
+
+2. Generate the slim variant using the helper script:
+
+   ```bash
+   docker-slim build --http-probe-off --entrypoint /mint-slim.sh hezzit-roundcube:dev
+   ```
+
+3. Use the resulting image tagged with the `-slim` suffix.
+
 ---
 
 ## 🙏 Acknowledgements
